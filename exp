@@ -1,0 +1,48 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+# rent hop place
+url = "https://www.renthop.com/search?city" 
+#requests
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
+}
+
+def scrape_renthop(url):
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"Error fetching data: HTTP {response.status_code}")
+        return []
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
+    listings = []
+    
+    
+    for listing in soup.find_all("div", class_="listing-card"):
+        title_elem = listing.find("h2", class_="listing-title")
+        price_elem = listing.find("div", class_="listing-price")
+        address_elem = listing.find("div", class_="listing-address")
+        
+        listings.append({
+            "Title": title_elem.get_text(strip=True) if title_elem else None,
+            "Price": price_elem.get_text(strip=True) if price_elem else None,
+            "Address": address_elem.get_text(strip=True) if address_elem else None
+        })
+    return listings
+
+def main():
+    # Get listings from the RentHop page
+    listings = scrape_renthop(url)
+    if listings:
+        df = pd.DataFrame(listings)
+        print("Sample Listings:")
+        print(df.head())
+        # Export data to CSV
+        df.to_csv("renthop_listings.csv", index=False)
+        print("Data exported to renthop_listings.csv")
+    else:
+        print("No listings found.")
+
+if __name__ == "__main__":
+    main()
